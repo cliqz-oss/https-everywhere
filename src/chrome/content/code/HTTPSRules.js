@@ -121,32 +121,32 @@ RuleSet.prototype = {
   log: function(level, msg) {
     https_everywhereLog(level, msg);
   },
- 
+
   wouldMatch: function(hypothetical_uri, alist) {
     // return true if this ruleset would match the uri, assuming it were http
     // used for judging moot / inactive rulesets
     // alist is optional
- 
+
     // if the ruleset is already somewhere in this applicable list, we don't
     // care about hypothetical wouldMatch questions
     if (alist && (this.name in alist.all)) return false;
- 
+
     this.log(DBUG,"Would " +this.name + " match " +hypothetical_uri.spec +
              "?  serial " + (alist && alist.serial));
-     
+
     var uri = hypothetical_uri.clone();
     if (uri.scheme == "https") uri.scheme = "http";
     var urispec = uri.spec;
 
     this.ensureCompiled();
 
-    if (this.ruleset_match_c && !this.ruleset_match_c.test(urispec)) 
+    if (this.ruleset_match_c && !this.ruleset_match_c.test(urispec))
       return false;
 
-    for (var i = 0; i < this.exclusions.length; ++i) 
+    for (var i = 0; i < this.exclusions.length; ++i)
       if (this.exclusions[i].pattern_c.test(urispec)) return false;
 
-    for (var i = 0; i < this.rules.length; ++i) 
+    for (var i = 0; i < this.rules.length; ++i)
       if (this.rules[i].from_c.test(urispec)) return true;
     return false;
   },
@@ -156,7 +156,7 @@ RuleSet.prototype = {
     // inactive, return 0; otherwise, return a fresh uri instance
     // for the target
     var newurl = this.apply(uri.spec);
-    if (null == newurl) 
+    if (null == newurl)
       return null;
     var newuri = Components.classes["@mozilla.org/network/standard-url;1"].
                  createInstance(CI.nsIStandardURL);
@@ -246,7 +246,31 @@ const RuleWriter = {
     return rv;
   },
 
-  read: function(file) {
+  readFromUrl: function (url) {
+    var ios = CC['@mozilla.org/network/io-service;1']
+        .getService(CI.nsIIOService);
+    var encoding = "UTF-8";
+    var channel = ios.newChannel(url, encoding, null);
+    var stream = channel.open();
+    var streamSize = stream.available();
+
+    if (!streamSize) {
+      return null;
+    }
+
+    var convStream = CC["@mozilla.org/intl/converter-input-stream;1"]
+        .createInstance(CI.nsIConverterInputStream);
+
+    convStream.init(stream, encoding, streamSize,
+        convStream.DEFAULT_REPLACEMENT_CHARACTER);
+
+    var data = {};
+    convStream.readString(streamSize, data);
+
+    return data.value;
+  },
+
+  readFromFile: function(file) {
     if (!file.exists())
       return null;
     var data = "";
@@ -285,7 +309,7 @@ const RuleWriter = {
   rulesetFromFile: function(file, rule_store, ruleset_id) {
     if ((rule_store.targets == null) && (rule_store.targets != {}))
       this.log(WARN, "TARGETS IS NULL");
-    var data = this.read(file);
+    var data = this.readFromFile(file);
     if (!data) return null;
     return this.readFromString(data, rule_store, ruleset_id);
   },
@@ -409,8 +433,9 @@ const HTTPSRules = {
    * XML string, which will be parsed on an as-needed basis.
    */
   loadTargets: function() {
-    var file = new FileUtils.File(RuleWriter.chromeToPath("chrome://https-everywhere/content/rulesets.json"));
-    var rules = JSON.parse(RuleWriter.read(file));
+    var loc = "chrome://https-everywhere/content/rulesets.json";
+    var data = RuleWriter.readFromUrl(loc);
+    var rules = JSON.parse(data);
     this.targets = rules.targets;
     this.rulesetStrings = rules.rulesetStrings;
   },
@@ -471,7 +496,7 @@ const HTTPSRules = {
     // the new uri if there was a rewrite.  Now it returns a JS object with a
     // newuri attribute and an applied_ruleset attribute (or null if there's
     // no rewrite).
-    var i = 0; 
+    var i = 0;
     userpass_present = false; // Global so that sanitiseURI can tweak it.
                               // Why does JS have no tuples, again?
     var blob = {}; blob.newuri = null;
@@ -495,13 +520,13 @@ const HTTPSRules = {
         if (alist && rs[i].wouldMatch(uri, alist))
           alist.inactive_rule(rs[i]);
         continue;
-      } 
+      }
       blob.newuri = rs[i].transformURI(uri);
       if (blob.newuri) {
         if (alist) {
-          if (uri.spec in https_everywhere_blacklist) 
+          if (uri.spec in https_everywhere_blacklist)
             alist.breaking_rule(rs[i]);
-          else 
+          else
             alist.active_rule(rs[i]);
   }
         if (userpass_present) blob.newuri.userPass = input_uri.userPass;
@@ -513,7 +538,7 @@ const HTTPSRules = {
         // requests are going over https
         if (rs[i].wouldMatch(uri, alist)) alist.moot_rule(rs[i]);
         continue;
-      } 
+      }
     }
     return null;
   },
@@ -529,7 +554,7 @@ const HTTPSRules = {
         uri = input_uri.clone();
         userpass_present = true; // tweaking a global in our caller :(
         uri.userPass = null;
-      } 
+      }
     } catch(e) {}
 
     // example.com.  is equivalent to example.com
@@ -539,7 +564,7 @@ const HTTPSRules = {
         try {
           var h = uri.host;
           if (h.charAt(h.length - 1) == ".") {
-            while (h.charAt(h.length - 1) == ".") 
+            while (h.charAt(h.length - 1) == ".")
               h = h.slice(0,-1);
             uri = uri.clone();
             uri.host = h;
@@ -732,7 +757,7 @@ const HTTPSRules = {
       nonce_path = nonce_path + nonce_path;
       var test_uri = "http://" + domain + nonce_path;
     } catch (e) {
-      this.log(WARN, "explosion in safeToSecureCookie for " + domain + "\n" 
+      this.log(WARN, "explosion in safeToSecureCookie for " + domain + "\n"
                       + "(" + e + ")");
       return false;
     }
