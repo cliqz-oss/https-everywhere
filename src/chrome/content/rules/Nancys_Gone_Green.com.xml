@@ -1,4 +1,4 @@
-<ruleset name="Nancys Gone Green.com">
+<ruleset name="Nancys Gone Green.com" default_off='expired certificate'>
 
 	<target host="nancysgonegreen.com" />
 	<target host="www.nancysgonegreen.com" />
