@@ -4,7 +4,7 @@ node {
 
   checkout([
     $class: 'GitSCM', 
-    branches: [[name: '*/BRANCH']], 
+    //branches: [[name: '*/BRANCH']], 
     doGenerateSubmoduleConfigurations: false, 
     extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../workspace@script/xpi-sign']], 
     submoduleCfg: [], userRemoteConfigs: [[credentialsId: XPI_SIGN_CREDENTIALS, url: XPI_SIGN_REPO_URL]]])
