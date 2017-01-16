@@ -167,7 +167,8 @@ function HTTPSEverywhere() {
                          this, false);
   branch.addObserver("security.mixed_content.block_active_content",
                          this, false);
-
+  branch.addObserver("extensions.https_everywhere.globalEnabled",
+                         this, false);
   return;
 }
 
@@ -557,6 +558,13 @@ HTTPSEverywhere.prototype = {
         if (!this.browser_initialised)
             return;
         switch (data) {
+            case "extensions.https_everywhere.globalEnabled":
+                if (this.prefs.getBoolPref("globalEnabled")) {
+                  this.enable();
+                } else {
+                  this.disable();
+                }
+                break;
             case "security.mixed_content.block_active_content":
             case "extensions.https_everywhere.enable_mixed_rulesets":
                 var p = CC["@mozilla.org/preferences-service;1"].getService(CI.nsIPrefBranch);
@@ -716,47 +724,60 @@ HTTPSEverywhere.prototype = {
     return tab;
   },
 
+  enable: function(then){
+    try {
+      this.obsService.addObserver(this, "profile-before-change", false);
+      this.obsService.addObserver(this, "profile-after-change", false);
+      this.obsService.addObserver(this, "sessionstore-windows-restored", false);
+      OS.addObserver(this, "cookie-changed", false);
+      OS.addObserver(this, "http-on-modify-request", false);
+      OS.addObserver(this, "http-on-examine-merged-response", false);
+      OS.addObserver(this, "http-on-examine-response", false);
+
+      var catman = CC["@mozilla.org/categorymanager;1"]
+                     .getService(CI.nsICategoryManager);
+      // hook on redirections (non persistent, otherwise crashes on 1.8.x)
+      catman.addCategoryEntry("net-channel-event-sinks", SERVICE_CTRID,
+                              SERVICE_CTRID, false, true);
+
+      HTTPSRules.init();
+
+      then && then();
+    } catch(e) {
+      this.log(WARN, "Couldn't add observers: " + e);
+    }
+  },
+
+  disable: function(then){
+    try {
+      this.obsService.removeObserver(this, "profile-before-change");
+      this.obsService.removeObserver(this, "profile-after-change");
+      this.obsService.removeObserver(this, "sessionstore-windows-restored");
+      OS.removeObserver(this, "cookie-changed");
+      OS.removeObserver(this, "http-on-modify-request");
+      OS.removeObserver(this, "http-on-examine-merged-response");
+      OS.removeObserver(this, "http-on-examine-response");
+
+      var catman = CC["@mozilla.org/categorymanager;1"]
+                     .getService(CI.nsICategoryManager);
+      catman.deleteCategoryEntry("net-channel-event-sinks",
+                                 SERVICE_CTRID, true);
+
+      then && then();
+    } catch(e) {
+      this.log(WARN, "Couldn't remove observers: " + e);
+    }
+  },
+
   toggleEnabledState: function() {
     if (this.prefs.getBoolPref("globalEnabled")) {
-      try {
-        this.obsService.removeObserver(this, "profile-before-change");
-        this.obsService.removeObserver(this, "profile-after-change");
-        this.obsService.removeObserver(this, "sessionstore-windows-restored");
-        OS.removeObserver(this, "cookie-changed");
-        OS.removeObserver(this, "http-on-modify-request");
-        OS.removeObserver(this, "http-on-examine-merged-response");
-        OS.removeObserver(this, "http-on-examine-response");
-
-        var catman = CC["@mozilla.org/categorymanager;1"]
-                       .getService(CI.nsICategoryManager);
-        catman.deleteCategoryEntry("net-channel-event-sinks",
-                                   SERVICE_CTRID, true);
-
+      this.disable(function(){
         this.prefs.setBoolPref("globalEnabled", false);
-      } catch(e) {
-        this.log(WARN, "Couldn't remove observers: " + e);
-      }
+      });
     } else {
-      try {
-        this.obsService.addObserver(this, "profile-before-change", false);
-        this.obsService.addObserver(this, "profile-after-change", false);
-        this.obsService.addObserver(this, "sessionstore-windows-restored", false);
-        OS.addObserver(this, "cookie-changed", false);
-        OS.addObserver(this, "http-on-modify-request", false);
-        OS.addObserver(this, "http-on-examine-merged-response", false);
-        OS.addObserver(this, "http-on-examine-response", false);
-
-        var catman = CC["@mozilla.org/categorymanager;1"]
-                       .getService(CI.nsICategoryManager);
-        // hook on redirections (non persistent, otherwise crashes on 1.8.x)
-        catman.addCategoryEntry("net-channel-event-sinks", SERVICE_CTRID,
-                                SERVICE_CTRID, false, true);
-
-        HTTPSRules.init();
+      this.enable(function(){
         this.prefs.setBoolPref("globalEnabled", true);
-      } catch(e) {
-        this.log(WARN, "Couldn't add observers: " + e);
-      }
+      });
     }
   },
 
