@@ -1,9 +1,21 @@
 node {
 
   stage 'checkout'
-
-  checkout([$class: 'GitSCM', branches: [[name: '*/cliqz-ci']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../workspace@script/xpi-sign']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: XPI_SIGN_CREDENTIALS, url: XPI_SIGN_REPO_URL]]])
-
+  checkout([
+    $class: 'GitSCM',
+    branches: [[name: '*/cliqz-ci']],
+    doGenerateSubmoduleConfigurations: false,
+    extensions: [[
+      $class: 'RelativeTargetDirectory',
+      relativeTargetDir: '../workspace@script/xpi-sign'
+    ]],
+    submoduleCfg: [],
+    userRemoteConfigs: [[
+      credentialsId: XPI_SIGN_CREDENTIALS,
+      url: XPI_SIGN_REPO_URL
+    ]]
+  ])
+  
   stage 'build'
 
   def imgName = "cliqz-oss/https-everywhere:${env.BUILD_TAG}"
