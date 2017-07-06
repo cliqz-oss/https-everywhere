@@ -41,8 +41,6 @@ echo "XPI uploaded to: ${S3_UPLOAD_URL}"
 
 echo "CLIQZ: publish"
 python ./cliqz/submitter.py \
-  --credentials-file $SECURE_PATH/balrog-creds.txt \
-  --username balrogadmin \
   --api-root http://balrog-admin.10e99.net/api \
   --release-channel $CHANNEL \
   --addon-id $ADDON_ID \

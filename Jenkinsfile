@@ -7,6 +7,7 @@ node {
   stage 'build'
 
   def imgName = "cliqz-oss/https-everywhere:${env.BUILD_TAG}"
+  def balrogCredentialsID = '774bccf1-ae66-41e1-9f2e-f8efb4bedc21'
 
   dir("../workspace@script") {
     sh 'rm -fr secure'
@@ -14,9 +15,22 @@ node {
 
     docker.build(imgName, ".")
 
-    docker.image(imgName).inside("-u 0:0") {
-      sh './install-dev-dependencies.sh'
-      sh '/bin/bash ./cliqz/build_sign_and_publish.sh '+CLIQZ_CHANNEL
+    withCredentials([
+        usernamePassword(
+            credentialsId: balrogCredentialsID, 
+            passwordVariable: 'BALROG_PASSWORD', 
+            usernameVariable: 'BALROG_ADMIN')]) {
+
+        withEnv([
+            "BALROG_ADMIN=$BALROG_ADMIN",
+            "BALROG_PASSWORD=$BALROG_PASSWORD"
+            ]) {
+
+            docker.image(imgName).inside("-u 0:0") {
+              sh './install-dev-dependencies.sh'
+              sh '/bin/bash ./cliqz/build_sign_and_publish.sh '+CLIQZ_CHANNEL
+            }
+        }
     }
 
     sh 'rm -rf secure'
