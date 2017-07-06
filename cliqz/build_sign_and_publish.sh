@@ -5,7 +5,7 @@ set -e
 ADDON_ID=https-everywhere@cliqz.com
 CHANNEL=$1
 PATH=/openssl-0.9.8zg/apps/:$PATH
-SECURE_PATH=./secure/$ADDON_ID
+#SECURE_PATH=./secure/$ADDON_ID
 
 if [ $# -eq 0 ];
 then
@@ -29,22 +29,22 @@ DOWNLOAD_URL=https://s3.amazonaws.com/cdncliqz/update/$CHANNEL/https-everywhere/
 echo "CLIQZ: sign"
 python ./xpi-sign/xpisign.py \
   --signer openssl \
-  --keyfile $SECURE_PATH/certs \
-  --passin file:$SECURE_PATH/pass \
+  --keyfile $XPISIGN_CERT \
+  --passin file:$XPISIGN_PASS \
   pkg/$XPI_NAME \
   pkg/$SIGNED_XPI_NAME
 
 echo "CLIQZ: upload"
-source $SECURE_PATH/upload-creds.sh
+#source $SECURE_PATH/upload-creds.sh
 aws s3 cp pkg/$SIGNED_XPI_NAME $S3_UPLOAD_URL --acl public-read
 echo "XPI uploaded to: ${S3_UPLOAD_URL}"
 
 echo "CLIQZ: publish"
 python ./cliqz/submitter.py \
-  --credentials-file $SECURE_PATH/balrog-creds.txt \
+  --credentials-file $BALROG_CREDS \
   --username balrogadmin \
   --api-root http://balrog-admin.10e99.net/api \
   --release-channel $CHANNEL \
   --addon-id $ADDON_ID \
   --addon-version $VERSION \
-  --addon-url $DOWNLOAD_URL
+  --addon-url $DOWNLOAD_URL/
