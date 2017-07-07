@@ -21,11 +21,6 @@ node {
             passwordVariable: 'BALROG_PASSWORD', 
             usernameVariable: 'BALROG_ADMIN')]) {
 
-        withEnv([
-            "BALROG_ADMIN=$BALROG_ADMIN",
-            "BALROG_PASSWORD=$BALROG_PASSWORD"
-            ]) {
-
             docker.image(imgName).inside("-u 0:0") {
               sh './install-dev-dependencies.sh'
               sh '/bin/bash ./cliqz/build_sign_and_publish.sh '+CLIQZ_CHANNEL
