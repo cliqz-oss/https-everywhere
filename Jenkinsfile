@@ -25,7 +25,6 @@ node {
               sh './install-dev-dependencies.sh'
               sh '/bin/bash ./cliqz/build_sign_and_publish.sh '+CLIQZ_CHANNEL
             }
-        }
     }
 
     sh 'rm -rf secure'
