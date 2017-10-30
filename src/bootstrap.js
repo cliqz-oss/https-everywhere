@@ -91,6 +91,14 @@ function startup({webExtension}) {
 
     browser.runtime.onConnect.addListener((port) => {
       handle_enable_toggle(port);
+
+
+      // In Cliqz, the browser pref controls the state of https-everywhere,
+      // thus we send its value to webextension on startup
+      port.postMessage({
+        type: "toggle_enabled_state",
+        value: branch.getBoolPref(PREF_NAME)
+      });
     });
 
     browser.runtime.onMessage.addListener((msg, sender, sendReply) => {
