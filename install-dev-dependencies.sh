@@ -46,7 +46,7 @@ if type apt-get >/dev/null ; then
     $SUDO_SHIM chmod 755 /usr/bin/geckodriver
   fi
   if [ ! -f /usr/lib/chromium/chromedriver ] && [ -f `which chromedriver` ]; then
-    ln -s `which chromedriver` /usr/lib/chromium/chromedriver -f
+    $SUDO_SHIM ln -s `which chromedriver` /usr/lib/chromium/chromedriver
   fi
 elif type brew >/dev/null ; then
   brew list python &>/dev/null || brew install python
@@ -92,7 +92,7 @@ git submodule init
 git submodule update
 
 # Install Python packages
-pip3 install --user --no-allow-insecure --no-allow-external -r requirements.txt
+pip3 install --user -r requirements.txt
 cd test/rules
 pip3 install --user -r requirements.txt
 cd -
