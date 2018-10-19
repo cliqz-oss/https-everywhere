@@ -2,6 +2,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/EFForg/https-everywhere/badge.svg?branch=master)](https://coveralls.io/github/EFForg/https-everywhere?branch=master)
 ================
 
+**Deprecated** | This repository has been deprecated and is no more maintained. We have made changes in the browser to accomodate the AMO version.
+
 Getting Started
 ---------------
 
